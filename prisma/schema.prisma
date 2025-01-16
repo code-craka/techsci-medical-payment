@@ -1,0 +1,104 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  username      String    @unique
+  email         String    @unique
+  password      String
+  phone         String?
+  reference     String?
+  status        String    @default("active")
+  balance       Float     @default(0)
+  role          String    @default("user")
+  resetToken    String?   @unique
+  resetTokenExp DateTime?
+  rememberToken String?   @unique
+  lastLogin     DateTime?
+  twoFactorEnabled Boolean @default(false)
+  twoFactorSecret String?
+  backupCodes    String[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  appointments  Appointment[]
+  loginHistory LoginHistory[]
+  @@map("users")
+}
+
+model Appointment {
+  id            String   @id @default(cuid())
+  userId        String
+  date          DateTime
+  category      String
+  city          String
+  travelTo      String
+  name          String
+  passport      String
+  currentCenter String?
+  choice1       String?
+  choice2       String?
+  choice3       String?
+  choice4       String?
+  status        String   @default("new")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("appointments")
+}
+
+model Center {
+  id        String   @id @default(cuid())
+  name      String
+  city      String
+  country   String
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([name, city, country])
+  @@map("centers")
+}
+
+model Price {
+  id        String   @id @default(cuid())
+  service   String
+  category  String
+  country   String
+  price     Float
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([service, category, country])
+  @@map("prices")
+}
+
+model LoginHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  ipAddress String
+  userAgent String
+  location  String?
+  status    String   // success, failed, blocked
+  reason    String?  // reason for failure/blocking
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("login_history")
+  @@index([userId, createdAt])
+}
