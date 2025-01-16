@@ -5,11 +5,15 @@ import { loginAlertTemplate } from '@/lib/email/templates';
 interface LoginAttempt {
   userId: string;
   status: 'success' | 'failed';
+  ipAddress: string;
+  userAgent: string;
 }
 
 export async function recordLoginAttempt(
   username: string,
-  success: boolean
+  success: boolean,
+  ipAddress: string,
+  userAgent: string
 ) {
   const user = await prisma.user.findUnique({
     where: { username },
@@ -23,6 +27,8 @@ export async function recordLoginAttempt(
     data: {
       userId: user.id,
       status: success ? 'success' : 'failed',
+      ipAddress,
+      userAgent,
     },
   });
 

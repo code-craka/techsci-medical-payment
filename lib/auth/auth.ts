@@ -19,6 +19,12 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Missing username or password");
         }
 
+        // Get IP address and user agent from headers
+        const ipAddress = req.headers?.['x-forwarded-for']?.toString() || 
+                         req.headers?.['x-real-ip']?.toString() || 
+                         'unknown';
+        const userAgent = req.headers?.['user-agent']?.toString() || 'unknown';
+
         // Check if login is blocked due to too many attempts
         const isBlocked = await shouldBlockLogin(credentials.username);
         if (isBlocked) {
@@ -39,14 +45,14 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!user) {
-          await recordLoginAttempt(credentials.username, false);
+          await recordLoginAttempt(credentials.username, false, ipAddress, userAgent);
           throw new Error("Invalid username or password");
         }
 
         // Verify password
         const isValidPassword = await compare(credentials.password, user.password);
         if (!isValidPassword) {
-          await recordLoginAttempt(user.username, false);
+          await recordLoginAttempt(user.username, false, ipAddress, userAgent);
           throw new Error("Invalid username or password");
         }
 
@@ -58,13 +64,13 @@ export const authOptions: NextAuthOptions = {
 
           const isValidCode = await verifyTwoFactorCode(user.id, credentials.code);
           if (!isValidCode) {
-            await recordLoginAttempt(user.username, false);
+            await recordLoginAttempt(user.username, false, ipAddress, userAgent);
             throw new Error("Invalid 2FA code");
           }
         }
 
         // Record successful login
-        await recordLoginAttempt(user.username, true);
+        await recordLoginAttempt(user.username, true, ipAddress, userAgent);
 
         return {
           id: user.id,
